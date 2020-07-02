@@ -82,11 +82,25 @@ namespace smt {
 
         void adapt_eq(theory_var v1, theory_var v2);
 
-        void add_edge(theory_var v1, theory_var v2, int diff, literal lit);
+        edge_id add_edge(theory_var v1, theory_var v2, int diff, literal lit);
 
         literal mk_literal(expr* e);
 
         theory_var ensure0();
+
+        theory_var ensure_maxchar();
+
+        bool try_assignment(theory_var v, unsigned ch);
+
+        bool try_bound(theory_var v, unsigned min, unsigned max);
+
+        void enforce_tv_is_value(theory_var v, unsigned ch);
+
+        bool enforce_char_range(svector<theory_var> const& char_vars);
+
+        bool enforce_char_codes(svector<theory_var> const& char_vars);
+
+        void try_make_nice(svector<theory_var> const& char_vars);
 
     public:
 
@@ -99,11 +113,11 @@ namespace smt {
         void pop_scope(unsigned n);
 
         // <= atomic constraints on characters
-        void assign_le(theory_var v1, theory_var v2, literal lit);
+        edge_id assign_le(theory_var v1, theory_var v2, literal lit);
 
         // < atomic constraint on characters
-        void assign_lt(theory_var v1, theory_var v2, literal lit);
-        
+        edge_id assign_lt(theory_var v1, theory_var v2, literal lit);
+
         // = on characters
         void new_eq_eh(theory_var v1, theory_var v2);
 
@@ -121,9 +135,12 @@ namespace smt {
 
         bool can_propagate() const { return m_qhead < m_asserted_edges.size(); }
 
+    };
 
-        
+    struct local_scope {
+        seq_unicode& s;
+        local_scope(seq_unicode& s): s(s) { s.push_scope(); }
+        ~local_scope() { s.pop_scope(1); }
     };
 
 }
-
