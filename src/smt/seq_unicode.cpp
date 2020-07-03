@@ -32,7 +32,8 @@ namespace smt {
         m_qhead(0),
         m_var_value_hash(*this),
         m_var_value_eq(*this),
-        m_var_value_table(DEFAULT_HASHTABLE_INITIAL_CAPACITY, m_var_value_hash, m_var_value_eq)
+        m_var_value_table(DEFAULT_HASHTABLE_INITIAL_CAPACITY, m_var_value_hash, m_var_value_eq),
+        m_uses_to_code(false)
     {}
 
     // <= atomic constraints on characters
@@ -108,8 +109,9 @@ namespace smt {
 
             // Check if the value is already nice
             int val = get_value(v);
-            if (val <= NICE_MAX && val >= NICE_MIN) continue;
-
+            if (NICE_MIN <= val && val <= NICE_MAX)
+                continue;
+        
             // Try assigning the variable to a nice value
             if (try_bound(v, NICE_MIN, NICE_MAX)) {
                 try_assignment(v, NICE_MIN + (i % (NICE_MAX - NICE_MIN + 1)));
@@ -154,10 +156,20 @@ namespace smt {
         return true;
     }
 
+    void seq_unicode::set_uses_to_code() {
+        if (!m_uses_to_code) {
+            ctx().push_trail(value_trail<smt::context, bool>(m_uses_to_code));
+            m_uses_to_code = true;
+        }
+    }
+
+
     bool seq_unicode::enforce_char_codes(svector<theory_var> const& char_vars) {
 
         // Iterate over all theory variables until the context is inconsistent
         bool success = true;
+        if (!m_uses_to_code)
+            return success;
         arith_util a(m);
         arith_value avalue(m);
         avalue.init(&ctx());
@@ -190,7 +202,7 @@ namespace smt {
         // Get character variables
         svector<theory_var> char_vars;
         for (unsigned v = 0; v < th.get_num_vars(); ++v) {
-            if(seq.is_char(th.get_expr(v)) && th.get_enode(v)->is_root()) char_vars.push_back(v);
+            if (seq.is_char(th.get_expr(v)) && th.get_enode(v)->is_root()) char_vars.push_back(v);
         }
 
         // Shift assignments on variables, so that they are "nice" (have values 'a', 'b', ...)

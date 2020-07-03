@@ -3351,6 +3351,10 @@ void theory_seq::relevant_eh(app* n) {
         add_length_to_eqc(arg);
     }
 
+    if (m_util.str.is_to_code(n)) {
+        m_unicode.set_uses_to_code();
+    }
+
     if (m_util.str.is_replace_all(n) ||
         m_util.str.is_replace_re(n) ||
         m_util.str.is_replace_re_all(n) ||

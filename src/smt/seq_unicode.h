@@ -71,6 +71,7 @@ namespace smt {
         var_value_hash   m_var_value_hash;
         var_value_eq     m_var_value_eq;
         var_value_table  m_var_value_table;
+        bool             m_uses_to_code;
 
         context& ctx() const { return th.get_context(); }
 
@@ -134,6 +135,7 @@ namespace smt {
         void propagate();
 
         bool can_propagate() const { return m_qhead < m_asserted_edges.size(); }
+        void set_uses_to_code();
 
     };
 
