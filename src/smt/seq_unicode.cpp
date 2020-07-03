@@ -89,9 +89,14 @@ namespace smt {
         local_scope sc(*this);
         dl.init_var(v);
         theory_var v0 = ensure0();
-
-        return dl.enable_edge(dl.add_edge(v, v0, s_integer(-1 * min), null_literal))
+        // v0 - v <= - min
+        // v - v0 <= max
+        bool is_sat = 
+            dl.enable_edge(dl.add_edge(v, v0, s_integer(-1 * min), null_literal))
             && dl.enable_edge(dl.add_edge(v0, v, s_integer(max), null_literal));
+        if (is_sat) 
+            dl.set_to_zero(v0);
+        return is_sat;
     }
 
     bool seq_unicode::try_assignment(theory_var v, unsigned ch) {
@@ -105,7 +110,8 @@ namespace smt {
         for (auto v : char_vars) {
 
             // Skip character constants, since they can't be changed
-            if (seq.is_const_char(th.get_expr(v))) continue;
+            if (seq.is_const_char(th.get_expr(v))) 
+                continue;
 
             // Check if the value is already nice
             int val = get_value(v);
@@ -113,8 +119,8 @@ namespace smt {
                 continue;
         
             // Try assigning the variable to a nice value
-            if (try_bound(v, NICE_MIN, NICE_MAX)) {
-                try_assignment(v, NICE_MIN + (i % (NICE_MAX - NICE_MIN + 1)));
+            if (try_bound(v, NICE_MIN, NICE_MAX) && 
+                try_assignment(v, NICE_MIN + (i % (NICE_MAX - NICE_MIN + 1)))) {
                 i++;
             }
         }
@@ -295,8 +301,7 @@ namespace smt {
 
     unsigned seq_unicode::get_value(theory_var v) {
         dl.init_var(v);
-        auto val = dl.get_assignment(v);
-        return val.get_int();
+        return dl.get_assignment(v).get_int();
     }
 
     void seq_unicode::push_scope() {
