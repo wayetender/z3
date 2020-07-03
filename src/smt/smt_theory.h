@@ -469,12 +469,14 @@ namespace smt {
            - theory_var insert_if_not_there(theory_var v)
         */
         template<typename VarValueTable>
-        bool assume_eqs(VarValueTable & table) {
+        bool assume_eqs(VarValueTable & table, std::function<bool(theory_var)>* use_var = nullptr) {
             TRACE("assume_eqs", tout << "starting...\n";);
             table.reset();
             bool result   = false;
             int num       = get_num_vars();
             for (theory_var v = 0; v < num; v++) {
+                if (use_var && !(*use_var)(v))
+                    continue;
                 enode * n        = get_enode(v);
                 theory_var other = null_theory_var;
                 TRACE("assume_eqs",

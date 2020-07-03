@@ -215,7 +215,10 @@ namespace smt {
         if (!enforce_char_codes(char_vars)) return false;
 
         // Enforce equalities over shared symbols
-        if (th.assume_eqs(m_var_value_table)) return false;
+        std::function<bool(theory_var)> use_var = [&](theory_var v) {
+            return seq.is_char(th.get_expr(v)) && th.get_enode(v)->is_root();
+        };
+        if (th.assume_eqs(m_var_value_table, &use_var)) return false;
 
         // If all checks pass, we're done
         return true;
