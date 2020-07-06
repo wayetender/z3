@@ -196,14 +196,19 @@ bool theory_seq::reduce_ne(unsigned idx) {
         for (auto const& p : eqs) {
             expr* nl = p.first;
             expr* nr = p.second;
+      
+            if (ctx.get_fparams().m_seq_use_unicode && m_util.is_char(nl)) {
+                m_unicode.new_diseq_eh(ensure_enode(nl)->get_th_var(get_id()),
+                                       ensure_enode(nr)->get_th_var(get_id()));
+            }
             if (m_util.is_seq(nl) || m_util.is_re(nl)) {
                 ls.reset();
                 rs.reset(); 
                 m_util.str.get_concat_units(nl, ls);
                 m_util.str.get_concat_units(nr, rs);
                 new_eqs.push_back(decomposed_eq(ls, rs));
-            }
-            else if (nl != nr) {                
+            }                        
+            else if (nl != nr) {   
                 literal lit(mk_eq(nl, nr, false));
                 ctx.mark_as_relevant(lit);
                 new_lits.push_back(lit);
