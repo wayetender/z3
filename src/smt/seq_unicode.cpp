@@ -301,6 +301,7 @@ namespace smt {
 
     unsigned seq_unicode::get_value(theory_var v) {
         dl.init_var(v);
+        TRACE("seq", tout << "get value: " << v << " " << dl.get_assignment(v).get_int() << "\n";);
         return dl.get_assignment(v).get_int();
     }
 

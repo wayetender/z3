@@ -942,6 +942,9 @@ bool theory_seq::simplify_eq(expr_ref_vector& ls, expr_ref_vector& rs, dependenc
         if (solve_unit_eq(li, ri, deps)) {
             // no-op
         }
+        else if (ctx.get_fparams().m_seq_use_unicode && m_util.is_char(li)) {
+            m_eqs.push_back(mk_eqdep(li, ri, deps));            
+        }
         else if (m_util.is_seq(li) || m_util.is_re(li)) {
             TRACE("seq_verbose", tout << "inserting " << li << " = " << ri << "\n";);
             m_eqs.push_back(mk_eqdep(li, ri, deps));            
