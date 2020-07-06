@@ -943,7 +943,10 @@ bool theory_seq::simplify_eq(expr_ref_vector& ls, expr_ref_vector& rs, dependenc
             // no-op
         }
         else if (ctx.get_fparams().m_seq_use_unicode && m_util.is_char(li)) {
-            m_eqs.push_back(mk_eqdep(li, ri, deps));            
+            enode* ln = ensure_enode(li);
+            enode* rn = ensure_enode(ri);
+            m_unicode.new_eq_eh(ln->get_th_var(get_id()), rn->get_th_var(get_id()));
+            propagate_eq(deps, ln, rn);
         }
         else if (m_util.is_seq(li) || m_util.is_re(li)) {
             TRACE("seq_verbose", tout << "inserting " << li << " = " << ri << "\n";);
