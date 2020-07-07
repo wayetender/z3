@@ -1674,6 +1674,9 @@ void theory_seq::display(std::ostream & out) const {
     if (!m_nqs.empty()) {
         display_disequations(out);
     }
+    if (ctx.get_fparams().m_seq_use_unicode)
+        m_unicode.display(out);
+
     if (!m_re2aut.empty()) {
         out << "Regex\n";
         for (auto const& kv : m_re2aut) {
@@ -1692,7 +1695,7 @@ void theory_seq::display(std::ostream & out) const {
         out << "Exclusions:\n";
         m_exclude.display(out);
     }
-
+    
     for (auto e : m_length) {
         rational lo(-1), hi(-1);
         lower_bound(e, lo);

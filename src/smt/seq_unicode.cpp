@@ -15,6 +15,7 @@ Author:
 
 --*/
 
+#include "ast/ast_pp.h"
 #include "smt/seq_unicode.h"
 #include "smt/smt_context.h"
 #include "smt/smt_arith_value.h"
@@ -40,6 +41,7 @@ namespace smt {
     edge_id seq_unicode::assign_le(theory_var v1, theory_var v2, literal lit) {
         dl.init_var(v1);
         dl.init_var(v2);
+        TRACE("seq", tout << mk_pp(th.get_expr(v1), m) << " <= " << mk_pp(th.get_expr(v2), m) << "\n";);
         return add_edge(v1, v2, 0, lit);
     }
 
@@ -47,6 +49,7 @@ namespace smt {
     edge_id seq_unicode::assign_lt(theory_var v1, theory_var v2, literal lit) {
         dl.init_var(v1);
         dl.init_var(v2);
+        TRACE("seq", tout << mk_pp(th.get_expr(v1), m) << " < " << mk_pp(th.get_expr(v2), m) << "\n";);
         return add_edge(v1, v2, -1, lit);
     }
 
@@ -220,14 +223,29 @@ namespace smt {
         // Make sure str.to_code(unit(v)) = val for all character variables
         if (!enforce_char_codes(char_vars)) return false;
 
-        // Enforce equalities over shared symbols
-        std::function<bool(theory_var)> use_var = [&](theory_var v) {
-            return seq.is_char(th.get_expr(v)) && th.get_enode(v)->is_root();
-        };
-        if (th.assume_eqs(m_var_value_table, &use_var)) return false;
+        TRACE("seq", tout << "assume-eqs\n";);
+        if (assume_eqs(char_vars)) return false;
 
         // If all checks pass, we're done
         return true;
+    }
+
+    bool seq_unicode::assume_eqs(svector<theory_var> const& vars) {
+        m_var_value_table.reset();
+        bool result   = false;
+        for (theory_var v : vars) {
+            theory_var other = m_var_value_table.insert_if_not_there(v);
+            if (other == v) 
+                continue;
+            enode * n1 = th.get_enode(v);
+            enode * n2 = th.get_enode(other);
+            TRACE("seq", tout << "value(#" << n1->get_owner_id() << ") = value(#" << n2->get_owner_id() << ")\n";);
+            if (th.assume_eq(n1, n2)) {
+                TRACE("seq", tout << "new assumed eq\n";);
+                result = true;
+            }
+        }
+        return result;
     }
 
     void seq_unicode::enforce_is_value(app* n, unsigned ch) {
@@ -275,7 +293,7 @@ namespace smt {
     }
 
     void seq_unicode::propagate(edge_id edge) {
-        TRACE("seq", dl.display(tout << "propagate " << edge << " "););
+        TRACE("seq", display(tout << "propagate " << edge << " "););
         if (dl.enable_edge(edge))
             return;
         m_nc_functor.reset();
@@ -301,7 +319,7 @@ namespace smt {
 
     unsigned seq_unicode::get_value(theory_var v) {
         dl.init_var(v);
-        TRACE("seq", tout << "get value: " << v << " " << dl.get_assignment(v).get_int() << "\n";);
+        TRACE("seq", tout << "get value: " << v << " " << mk_pp(th.get_expr(v), m) << " " << dl.get_assignment(v).get_int() << "\n";);
         return dl.get_assignment(v).get_int();
     }
 

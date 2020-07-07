@@ -570,6 +570,8 @@ namespace smt {
         // -----------------------------------
         virtual theory * mk_fresh(context * new_ctx) = 0;
 
+        bool assume_eq(enode * n1, enode * n2);
+
     protected:
         // ----------------------------------------------------
         //
@@ -581,7 +583,6 @@ namespace smt {
 
         bool is_relevant_and_shared(enode * n) const;
 
-        bool assume_eq(enode * n1, enode * n2);
     };
     
 };

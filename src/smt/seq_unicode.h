@@ -103,6 +103,7 @@ namespace smt {
 
         void try_make_nice(svector<theory_var> const& char_vars);
 
+        bool assume_eqs(svector<theory_var> const& vars);
     public:
 
         seq_unicode(theory& th);
@@ -136,6 +137,8 @@ namespace smt {
 
         bool can_propagate() const { return m_qhead < m_asserted_edges.size(); }
         void set_uses_to_code();
+
+        std::ostream& display(std::ostream& out) const { return dl.display(out); }
 
     };
 

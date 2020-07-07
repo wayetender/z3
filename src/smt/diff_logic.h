@@ -975,8 +975,9 @@ public:
         }
     };
 
-    void display(std::ostream & out) const {
+    std::ostream& display(std::ostream & out) const {
         display_core(out, every_var_proc());
+        return out;
     }
 
     void display_agl(std::ostream & out) const {
