@@ -210,9 +210,9 @@ namespace smt {
 
         // Get character variables
         svector<theory_var> char_vars;
-        for (unsigned v = 0; v < th.get_num_vars(); ++v) {
-            if (seq.is_char(th.get_expr(v)) && th.get_enode(v)->is_root()) char_vars.push_back(v);
-        }
+        for (unsigned v = 0; v < th.get_num_vars(); ++v) 
+            if (seq.is_char(th.get_expr(v)) && th.get_enode(v)->is_root()) 
+                char_vars.push_back(v);        
 
         // Shift assignments on variables, so that they are "nice" (have values 'a', 'b', ...)
         try_make_nice(char_vars);
@@ -225,7 +225,7 @@ namespace smt {
         if (!enforce_char_codes(char_vars)) 
             return false;
 
-        TRACE("seq", tout << "assume-eqs\n";);
+        // Ensure that equal characters are known to be equal to congruences.
         if (!assume_eqs(char_vars)) 
             return false;
 
@@ -242,9 +242,8 @@ namespace smt {
                 continue;
             enode * n1 = th.get_enode(v);
             enode * n2 = th.get_enode(other);
-            TRACE("seq", tout << "value(#" << n1->get_owner_id() << ") = value(#" << n2->get_owner_id() << ")\n";);
+            TRACE("seq", tout << "assume v" << v << " == v" << other << "\n";);
             if (th.assume_eq(n1, n2)) {
-                TRACE("seq", tout << "new assumed eq\n";);
                 success = false;
             }
         }
