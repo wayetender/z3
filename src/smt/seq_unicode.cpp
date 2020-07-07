@@ -237,13 +237,9 @@ namespace smt {
         m_var_value_table.reset();
         bool success = true;
         for (theory_var v : vars) {
-            theory_var other = m_var_value_table.insert_if_not_there(v);
-            if (other == v) 
-                continue;
-            enode * n1 = th.get_enode(v);
-            enode * n2 = th.get_enode(other);
-            TRACE("seq", tout << "assume v" << v << " == v" << other << "\n";);
-            if (th.assume_eq(n1, n2)) {
+            theory_var w = m_var_value_table.insert_if_not_there(v);
+            if (w != v && th.assume_eq(th.get_enode(v), th.get_enode(w))) {
+                TRACE("seq", tout << "assume v" << v << " == v" << w << "\n";);
                 success = false;
             }
         }
