@@ -1466,6 +1466,7 @@ bool core::integrality_holds() {
 
 
 lbool core::check(vector<lemma>& l_vec) {
+    TRACE("nla_solver_details", print_monics(tout) << "\n";);
     lp_settings().stats().m_nla_calls++;
     TRACE("nla_solver", tout << "calls = " << lp_settings().stats().m_nla_calls << "\n";);
     m_lar_solver.get_rid_of_inf_eps();
