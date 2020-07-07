@@ -218,13 +218,16 @@ namespace smt {
         try_make_nice(char_vars);
 
         // Validate that all variables must be in 0 <= v <= zstring::max_char()
-        if (!enforce_char_range(char_vars)) return false;
+        if (!enforce_char_range(char_vars)) 
+            return false;
 
         // Make sure str.to_code(unit(v)) = val for all character variables
-        if (!enforce_char_codes(char_vars)) return false;
+        if (!enforce_char_codes(char_vars)) 
+            return false;
 
         TRACE("seq", tout << "assume-eqs\n";);
-        if (assume_eqs(char_vars)) return false;
+        if (!assume_eqs(char_vars)) 
+            return false;
 
         // If all checks pass, we're done
         return true;
@@ -232,7 +235,7 @@ namespace smt {
 
     bool seq_unicode::assume_eqs(svector<theory_var> const& vars) {
         m_var_value_table.reset();
-        bool result   = false;
+        bool success = true;
         for (theory_var v : vars) {
             theory_var other = m_var_value_table.insert_if_not_there(v);
             if (other == v) 
@@ -242,10 +245,10 @@ namespace smt {
             TRACE("seq", tout << "value(#" << n1->get_owner_id() << ") = value(#" << n2->get_owner_id() << ")\n";);
             if (th.assume_eq(n1, n2)) {
                 TRACE("seq", tout << "new assumed eq\n";);
-                result = true;
+                success = false;
             }
         }
-        return result;
+        return success;
     }
 
     void seq_unicode::enforce_is_value(app* n, unsigned ch) {
