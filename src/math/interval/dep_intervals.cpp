@@ -86,6 +86,18 @@ bool dep_intervals::separated_from_zero_on_upper(const interval& i) const {
     return true;
 }
 
+bool dep_intervals::separated_from_zero(const interval& i, sign s) const {
+    if (s == sign_zero)
+        return separated_from_zero(i);
+    if (s == sign_neg) {
+        return separated_from_zero_on_upper(i);
+    }
+    if (s == sign_pos) {
+        return separated_from_zero_on_lower(i);
+    }
+    return false;
+}
+
 std::ostream& dep_intervals::display(std::ostream& out, const interval& i) const {
     if (m_imanager.lower_is_inf(i)) {
         out << "(-oo";

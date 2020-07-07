@@ -122,8 +122,9 @@ private:
     equation_vector                              m_all_eqs;
     equation*                                    m_conflict;   
     bool                                         m_too_complex;
+    const std::function<bool (vector<std::pair<rational, unsigned_vector>>&)> m_f;
 public:
-    solver(reslimit& lim, pdd_manager& m);
+    solver(reslimit& lim, pdd_manager& m, const std::function<bool (vector<std::pair<rational, unsigned_vector>>&)>& f);
     ~solver();
 
     pdd_manager& get_manager() { return m; }
@@ -165,7 +166,8 @@ private:
     bool is_trivial(equation const& eq) const { return eq.poly().is_zero(); }    
     bool is_simpler(equation const& eq1, equation const& eq2) { return m.lm_lt(eq1.poly(), eq2.poly()); }
     bool is_conflict(equation const* eq) const { return is_conflict(*eq); }
-    bool is_conflict(equation const& eq) const { return eq.poly().is_val() && !is_trivial(eq); }
+    void check_callback(equation const & eq) const;
+    bool is_conflict(equation const& eq) const { check_callback(eq); return eq.poly().is_val() && !is_trivial(eq); }
     bool check_conflict(equation& eq) { return is_conflict(eq) && (set_conflict(eq), true); }    
     void set_conflict(equation& eq) { m_conflict = &eq; push_equation(solved, eq); }
     void set_conflict(equation* eq) { m_conflict = eq; push_equation(solved, eq); }

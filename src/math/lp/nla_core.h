@@ -177,8 +177,20 @@ public:
 private:
     bool                     m_cautious_patching;
     lpvar                    m_patched_var;
-    monic const*             m_patched_monic;      
+    monic const*             m_patched_monic;    
+    nex_creator              m_nex_creator;
+
+    bool check_div_on_var(lpvar j, const vector<std::pair<rational, unsigned_vector>> & p);
+    bool check_div_on_two_vars(lpvar cj, lpvar j, bool j_sign);
+    vector<lpvar> get_common_vars_from_row(const vector<lp::row_cell<rational>>& row, lpvar) const;
+    vector<lpvar> get_common_vars_from_row(const vector<std::pair<rational, unsigned_vector>> & p, lpvar j) const;
+    bool var_is_less_than(lpvar, lpvar) const;
+    bool var_is_less_than_on_terms(lpvar, lpvar) const;
+    bool var_is_less_than_on_term(const lp::lar_term*, unsigned, lpvar, lpvar) const;
 public:    
+    nex_creator& get_nex_creator() { return m_nex_creator; }
+    bool check_div(const vector<lp::row_cell<rational>>& row);
+    bool check_div(vector<std::pair<rational, unsigned_vector>> & p);
     void insert_to_refine(lpvar j);
     void erase_from_to_refine(lpvar j);
     
@@ -369,6 +381,7 @@ public:
 
     bool var_has_negative_upper_bound(lpvar j) const;
     
+    bool var_is_separated_from_zero(lpvar j, bool & sign) const;
     bool var_is_separated_from_zero(lpvar j) const;
 
     bool vars_are_equiv(lpvar a, lpvar b) const;    

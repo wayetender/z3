@@ -41,8 +41,12 @@ namespace sat {
     };
             
     void anf_simplifier::operator()() {
+        std::function<bool (const vector<std::pair<rational, unsigned_vector>>&)> f =[]( const vector<std::pair<rational, unsigned_vector>>& ) {
+            NOT_IMPLEMENTED_YET();
+            return false;
+        };
         dd::pdd_manager m(20, dd::pdd_manager::semantics::mod2_e);
-        pdd_solver solver(s.rlimit(), m);
+        pdd_solver solver(s.rlimit(), m, f);
         report _report(*this);
         configure_solver(solver);
         clauses2anf(solver);

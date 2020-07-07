@@ -59,10 +59,17 @@ namespace dd {
        
     */
 
-    solver::solver(reslimit& lim, pdd_manager& m) : 
+
+void solver::check_callback(equation const & eq) const {
+    auto vars = m.to_monomials(eq.poly());
+    m_f(vars);
+}
+
+solver::solver(reslimit& lim, pdd_manager& m, const std::function<bool (vector<std::pair<rational, unsigned_vector>>&)>& f) : 
         m(m),
         m_limit(lim), 
-        m_conflict(nullptr)
+        m_conflict(nullptr),
+        m_f(f)
     {}
 
     solver::~solver() {

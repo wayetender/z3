@@ -31,7 +31,7 @@ core::core(lp::lar_solver& s, reslimit & lim) :
     m_monomial_bounds(this),
     m_horner(this),
     m_pdd_manager(s.number_of_vars()),
-    m_pdd_grobner(lim, m_pdd_manager),
+    m_pdd_grobner(lim, m_pdd_manager, [&](vector<std::pair<rational, unsigned_vector>>& p) { return check_div(p); }),
     m_emons(m_evars),
     m_reslim(lim),
     m_use_nra_model(false),
@@ -643,6 +643,19 @@ bool core::var_is_separated_from_zero(lpvar j) const {
     return
         var_has_negative_upper_bound(j) ||
         var_has_positive_lower_bound(j);
+}
+
+bool core::var_is_separated_from_zero(lpvar j, bool & sign) const {
+    if (var_has_negative_upper_bound(j)) {
+        sign = true;
+        return true;
+    }
+    
+    if (var_has_positive_lower_bound(j)) {
+        sign = false;
+        return true;
+    }
+    return false;
 }
     
 
@@ -1898,6 +1911,176 @@ void core::collect_statistics(::statistics & st) {
     st.update("arith-nla-explanations", m_stats.m_nla_explanations);
     st.update("arith-nla-lemmas", m_stats.m_nla_lemmas);
     st.update("arith-nra-calls", m_stats.m_nra_calls);    
+}
+
+// returns true if j does not divide k
+bool core::check_div_on_two_vars(lpvar k, lpvar j, bool j_sign) {
+    SASSERT((j_sign && var_has_negative_upper_bound(j)) || ((!j_sign) && var_has_positive_lower_bound(j)));
+    if (j_sign) {
+        // we have x[j] < 0, check that 
+        // x[j] > x[k], or x[j] - x[k] > 0
+        nex* s = m_nex_creator.mk_sum(m_nex_creator.mk_var(j), m_nex_creator.mk_mul(m_nex_creator.mk_var(k), rational(-1)));
+        u_dependency* dep = nullptr;
+        if (m_intervals.check_nex_sign(s, dep, sign_pos)) {
+            TRACE("nla_solver", tout << "conflict\n";);
+            return true;
+        }
+    } else {
+        // we have x[j] > 0, check that 
+        // x[j] < x[k], or x[j] - x[k] < 0
+        nex* s =m_nex_creator.mk_sum(m_nex_creator.mk_var(j), m_nex_creator.mk_mul(m_nex_creator.mk_var(k), rational(-1)));
+        u_dependency* dep = nullptr;
+        if (m_intervals.check_nex_sign(s, dep, sign_pos)) {
+            TRACE("nla_solver", tout << "conflict\n";);
+            return true;
+        }
+    }
+    return false;
+}
+
+bool core::var_is_less_than(lpvar k, lpvar j) const {
+    if (m_lar_solver.get_column_type(k) == lp::column_type::boxed) {
+        NOT_IMPLEMENTED_YET();
+    } else {
+        return var_is_less_than_on_terms(k, j);
+    }
+    return false;
+}
+
+bool core::var_is_less_than_on_terms(lpvar k, lpvar j) const {
+    for (unsigned i = 0; i < m_lar_solver.terms().size(); i++) {
+        const lp::lar_term *t = m_lar_solver.terms()[i];
+        if (!t->contains(k) || t->contains(j))
+            continue;
+        if (var_is_less_than_on_term(t, i, k, j))
+            return true;
+    }
+    return false;
+    
+}
+// ti is the term index
+bool core::var_is_less_than_on_term(const lp::lar_term* t, unsigned ti, lpvar k, lpvar j) const {
+    if (t->size() == 2) {
+        unsigned term_j = m_lar_solver.local_to_external(lp::tv::mask_term(ti));
+        bool sign = t->get_coeff(j).is_minus_one();
+        mpq bound;
+        if (!sign && m_lar_solver.column_has_lower_bound(j) && m_lar_solver.get_lower_bound(j).is_pos()) {
+            const lp::mpq& k_coeff = t->get_coeff(k);
+            if (k_coeff.is_minus_one()) { //t = x[j] - x[k] < 0 ?
+                if (m_lar_solver.column_has_upper_bound(term_j) && m_lar_solver.get_upper_bound(term_j) < lp::zero_of_type<lp::impq>()) {
+                    std::cout << "conflict\n";
+                    exit(1);
+                }
+            } else { // t = x[j] + x[k] < 0 ?                
+                NOT_IMPLEMENTED_YET();
+            }
+        } else {
+            NOT_IMPLEMENTED_YET();
+        }
+    } else {
+        NOT_IMPLEMENTED_YET();
+    }
+    return false;
+}
+
+// get the vector of all variables that divide every row member, except j
+vector<lpvar> core::get_common_vars_from_row(const vector<lp::row_cell<rational>>& row, lpvar j) const {
+    vector<lpvar> ret;
+    unsigned k = row[0].var() == j? 1:0;
+
+    lpvar p = row[k].var();
+    if (!is_monic_var(p)) {
+        k++;
+        for (; k < row.size(); k++) {
+            lpvar u = row[k].var();
+            if (u == j) continue;
+            if (!is_monic_var(u))
+                return ret;
+            if (!emons()[u].contains_var(p))
+                return ret;
+        }
+        ret.push_back(p);
+        return ret;
+    }
+
+    for (lpvar v : emons()[p]) {
+        bool insert = true;
+        for (unsigned l = k + 1; l < row.size(); l++) {
+            lpvar u = row[l].var();
+            if (u == j) continue;
+            if (is_monic_var(u)) {
+                if (!emons()[u].contains_var(v)) {
+                    insert = false;
+                    break;
+                }
+                continue;
+            }
+            if (v != u) {
+                insert = false;
+                break;
+            }
+        }
+        if (insert)
+            ret.push_back(v);        
+    }
+    return ret;
+}
+
+bool equal_j(const unsigned_vector& vars, lpvar j) {
+    return vars.size() == 1 && vars[0] == j;
+}
+// get the vector of containing every polynomial variables that divide every row member, except j
+vector<lpvar> core::get_common_vars_from_row(const vector<std::pair<rational, unsigned_vector>> & p, lpvar j) const {
+    vector<lpvar> ret;
+    unsigned k = equal_j(p[0].second, j)? 1:0;
+    
+    for (lpvar v : p[k].second) {
+        if (equal_j(p[k].second, j))
+            continue; 
+        bool insert = true;
+        for (unsigned l = k + 1; l < p.size(); l++) {
+            auto & vars = p[l].second;
+            if (equal_j(vars, j))
+                continue;
+            if (!std::binary_search (vars.begin(), vars.end(), v)) {
+                insert = false;
+                break;
+            }
+        }
+        if (insert)
+            ret.push_back(v);        
+    }
+    return ret;
+}
+
+
+// return true if row cannot be zero because j does not divide the rest
+// of the row
+bool core::check_div_on_var(lpvar j, const vector<std::pair<rational, unsigned_vector>> & p) {
+    bool sign; 
+    if (!var_is_separated_from_zero(j, sign))
+        return false;
+    vector<lpvar> common_vars = get_common_vars_from_row(p, j);
+    CTRACE("nla_solver", common_vars.size(), tout << "common var but " << j << " = "; print_vector(common_vars, tout); );
+    for (lpvar k : common_vars) {
+        if (check_div_on_two_vars(k, j, sign))
+            return true;
+    }
+    return false;
+}
+// return true if row cannot be zero because of divisibility
+bool core::check_div(vector<std::pair<rational, unsigned_vector>>& p) {
+    for (auto& c : p) {
+        std::sort (c.second.begin(), c.second.end());  
+    }
+
+    for (const auto& c : p) {
+        if ((c.first.is_one() || c.first.is_minus_one()) &&
+            c.second.size() == 1)
+            if (check_div_on_var(c.second[0], p))
+                return true;
+    }
+    return false;
 }
 
 

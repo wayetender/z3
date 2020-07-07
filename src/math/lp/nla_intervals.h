@@ -79,6 +79,7 @@ public:
     bool is_inf(const interval& i) const { return m_dep_intervals.is_inf(i); }
 
     bool check_nex(const nex*, u_dependency*);
+    bool check_nex_sign(const nex*, u_dependency*, sign);
     const nex* get_zero_interval_child(const nex_mul&) const;
     const nex* get_inf_interval_child(const nex_sum&) const;
     bool has_zero_interval(const nex&) const;

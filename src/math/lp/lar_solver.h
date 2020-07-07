@@ -645,6 +645,5 @@ public:
     }
     friend int_solver;
     friend int_branch;
-    
 };
 }

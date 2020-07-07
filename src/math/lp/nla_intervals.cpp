@@ -80,7 +80,7 @@ std::ostream& intervals::display_separating_interval(std::ostream& out, const ne
 }
 
 // return true iff the interval of n is does not contain 0
-bool intervals::check_nex(const nex* n, u_dependency* initial_deps) {
+bool intervals::check_nex_sign(const nex* n, u_dependency* initial_deps, sign s) {
     m_core->lp_settings().stats().m_cross_nested_forms++;
     scoped_dep_interval i(get_dep_intervals());
     std::function<void (const lp::explanation&)> f = [this](const lp::explanation& e) {
@@ -91,7 +91,7 @@ bool intervals::check_nex(const nex* n, u_dependency* initial_deps) {
         // found a conflict during the interval calculation
         return true;
     }
-    if (!m_dep_intervals.separated_from_zero(i)) {
+    if (!m_dep_intervals.separated_from_zero(i, s)) {
         return false;
     }
     scoped_dep_interval interv_wd(get_dep_intervals());
@@ -100,6 +100,14 @@ bool intervals::check_nex(const nex* n, u_dependency* initial_deps) {
     m_dep_intervals.check_interval_for_conflict_on_zero(interv_wd, initial_deps, f);
     return true;
 }
+
+
+// return true iff the interval of n is does not contain 0
+bool intervals::check_nex(const nex* n, u_dependency* initial_deps) {    
+    m_core->lp_settings().stats().m_cross_nested_forms++;
+    return check_nex_sign(n, initial_deps, sign_zero);
+}
+
 
 void intervals::add_mul_of_degree_one_to_vector(const nex_mul* e, vector<std::pair<rational, lpvar>> &v) {
     TRACE("nla_intervals_details", tout << *e << "\n";);

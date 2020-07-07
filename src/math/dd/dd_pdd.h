@@ -239,9 +239,9 @@ namespace dd {
         bool common_factors(pdd const& a, pdd const& b, unsigned_vector& p, unsigned_vector& q, rational& pc, rational& qc);
         PDD first_leading(PDD p) const;
         PDD next_leading(PDD p) const;
-
+    public:
         monomials_t to_monomials(pdd const& p);
-
+    private:
         struct scoped_push {
             pdd_manager& m;
             unsigned     m_size;

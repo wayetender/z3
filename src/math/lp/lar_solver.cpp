@@ -2421,6 +2421,8 @@ void lar_solver::pivot_column_tableau(unsigned j, unsigned row_index) {
     m_mpq_lar_core_solver.m_r_solver.pivot_column_tableau(j, row_index);
     m_mpq_lar_core_solver.m_r_solver.change_basis(j, r_basis()[row_index]);
 }
+
+
 } // namespace lp
 
 

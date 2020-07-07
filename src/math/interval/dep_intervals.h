@@ -25,6 +25,7 @@
 #include "util/rational.h"
 #include "util/rlimit.h"
 #include "math/interval/interval.h"
+#include "util/sign.h"
 
 class dep_intervals {
 public:
@@ -302,6 +303,7 @@ public:
     inline bool separated_from_zero(const interval& i) const {
         return separated_from_zero_on_upper(i) || separated_from_zero_on_lower(i);
     }
+    bool separated_from_zero(const interval& i, sign) const;
     // if the separation happens then call f()
     template <typename T> 
     bool check_interval_for_conflict_on_zero(const interval& i, u_dependency* dep, std::function<void (const T&)> f) {

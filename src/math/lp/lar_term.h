@@ -32,13 +32,21 @@ public:
         if (c.is_zero())
             return;
         auto *e = m_coeffs.find_core(j);        
-        if (e == nullptr) {
+        if (!e) {
             m_coeffs.insert(j, c);
         } else {
             e->get_data().m_value += c;
             if (e->get_data().m_value.is_zero())
                 m_coeffs.erase(j);
         }
+    }
+
+    const mpq& get_coeff(unsigned j) const {        
+        auto *e = m_coeffs.find_core(j);
+        if (!e)
+            return numeric_traits<mpq>::zero();
+        return
+            e->get_data().m_value;            
     }
     
     void add_var(lpvar j) {

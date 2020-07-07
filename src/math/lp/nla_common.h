@@ -49,7 +49,6 @@ class core;
 class intervals;
 struct common {
     core&                                        m_core;
-    nex_creator                                  m_nex_creator;
     
     common(core* c): m_core(*c) {}
     core& c() { return m_core; }

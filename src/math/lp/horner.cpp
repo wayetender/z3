@@ -25,7 +25,7 @@
 
 namespace nla {
 typedef intervals::interval interv;
-horner::horner(core * c) : common(c), m_row_sum(m_nex_creator) {}
+horner::horner(core * c) : common(c), m_row_sum(c->get_nex_creator()) {}
 
 template <typename T>
 bool horner::row_has_monomial_to_refine(const T& row) const {
@@ -78,9 +78,9 @@ bool horner::lemmas_on_row(const T& row) {
     SASSERT (row_is_interesting(row));
     c().clear_and_resize_active_var_set();
     u_dependency* dep = nullptr;
-    create_sum_from_row(row, m_nex_creator, m_row_sum, dep);
-    c().set_active_vars_weights(m_nex_creator); // without this call the comparisons will be incorrect
-    nex* e =  m_nex_creator.simplify(m_row_sum.mk());
+    create_sum_from_row(row, c().get_nex_creator(), m_row_sum, dep);
+    c().set_active_vars_weights(c().get_nex_creator()); // without this call the comparisons will be incorrect
+    nex* e =  c().get_nex_creator().simplify(m_row_sum.mk());
     TRACE("nla_horner", tout << "e = " << * e << "\n";);
     if (e->get_degree() < 2)
         return false;
@@ -90,7 +90,7 @@ bool horner::lemmas_on_row(const T& row) {
     cross_nested cn(
         [this, dep](const nex* n) { return c().m_intervals.check_nex(n, dep); },
         [this](unsigned j)   { return c().var_is_fixed(j); },
-        [this]() { return c().random(); }, m_nex_creator);
+        [this]() { return c().random(); }, c().get_nex_creator());
     bool ret = lemmas_on_expr(cn, to_sum(e));
     c().m_intervals.get_dep_intervals().reset(); // clean the memory allocated by the interval bound dependencies
     return ret;

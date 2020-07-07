@@ -10,9 +10,10 @@ Abstract:
     Cuts (branches) from Hermite matrices
     The implementation is based on ideas from
     "Cutting the Mix" by Jurgen Christ and Jochen Hoenicke.
-Author:
-    Lev Nachmanson (levnach)
-
+     and Cuts from Proofs: A Complete and Practical Technique for Solving Linear Inequalities        over Integers Isil Dillig, Thomas Dillig, Alex Aiken.
+     Formal Methods in System Design (FMSD) CAV 2009 special issue.
+     The implementation closely follows "Cutting the Mix".
+     Author:  Lev Nachmanson (levnach)
 --*/
 
 #pragma once
