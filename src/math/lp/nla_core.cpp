@@ -1914,28 +1914,39 @@ void core::collect_statistics(::statistics & st) {
 }
 
 // returns true if j does not divide k
+// j_sign is the sign of variable j : (j_sign && x[j] > 0) || ((!j_sign) && x[j] < 0)  
 bool core::check_div_on_two_vars(lpvar k, lpvar j, bool j_sign) {
     SASSERT((j_sign && var_has_negative_upper_bound(j)) || ((!j_sign) && var_has_positive_lower_bound(j)));
-    if (j_sign) {
-        // we have x[j] < 0, check that 
-        // x[j] > x[k], or x[j] - x[k] > 0
-        nex* s = m_nex_creator.mk_sum(m_nex_creator.mk_var(j), m_nex_creator.mk_mul(m_nex_creator.mk_var(k), rational(-1)));
-        u_dependency* dep = nullptr;
-        if (m_intervals.check_nex_sign(s, dep, sign_pos)) {
-            TRACE("nla_solver", tout << "conflict\n";);
-            return true;
-        }
+    // we have x[j] < 0, check that 
+    // x[j] > x[k], or x[j] - x[k] > 0
+    unsigned alloc_size = m_nex_creator.size();
+    nex* s = m_nex_creator.mk_sum(m_nex_creator.mk_var(j), m_nex_creator.mk_mul(m_nex_creator.mk_var(k), rational(-1)));
+    u_dependency* dep = nullptr;
+    bool ret = false;
+    if (m_intervals.check_nex_sign(s, dep, j_sign? sign_pos: sign_neg)) {
+        TRACE("nla_solver", tout << "conflict\n";);
+        ret =  true;
     } else {
-        // we have x[j] > 0, check that 
-        // x[j] < x[k], or x[j] - x[k] < 0
-        nex* s =m_nex_creator.mk_sum(m_nex_creator.mk_var(j), m_nex_creator.mk_mul(m_nex_creator.mk_var(k), rational(-1)));
-        u_dependency* dep = nullptr;
-        if (m_intervals.check_nex_sign(s, dep, sign_pos)) {
-            TRACE("nla_solver", tout << "conflict\n";);
-            return true;
+        if (j_sign) {
+            if (has_lower_bound(j) && has_upper_bound(k)) {
+                if (get_lower_bound(j) > get_upper_bound(k)) {
+                    TRACE("nla_solver", tout << "conflict\n";);
+                    ret = true;
+                    exit(111);
+                }
+            }
+        } else {
+            if (has_upper_bound(j) && has_lower_bound(k)) {
+                if (get_upper_bound(j) < get_lower_bound(k)) {
+                    TRACE("nla_solver", tout << "conflict\n";);
+                    exit(111);
+                    ret = true;
+                }
+            }
         }
     }
-    return false;
+    m_nex_creator.pop(alloc_size);
+    return ret;
 }
 
 bool core::var_is_less_than(lpvar k, lpvar j) const {
@@ -2057,7 +2068,8 @@ vector<lpvar> core::get_common_vars_from_row(const vector<std::pair<rational, un
 // return true if row cannot be zero because j does not divide the rest
 // of the row
 bool core::check_div_on_var(lpvar j, const vector<std::pair<rational, unsigned_vector>> & p) {
-    bool sign; 
+    bool sign;
+    TRACE("nla_solver", print_var(j, tout) << "\n";);
     if (!var_is_separated_from_zero(j, sign))
         return false;
     vector<lpvar> common_vars = get_common_vars_from_row(p, j);
@@ -2070,7 +2082,16 @@ bool core::check_div_on_var(lpvar j, const vector<std::pair<rational, unsigned_v
 }
 // return true if row cannot be zero because of divisibility
 bool core::check_div(vector<std::pair<rational, unsigned_vector>>& p) {
+    
     for (auto& c : p) {
+        // in the same loop check that p is integral
+        if (!c.first.is_int()) {
+            return false;
+        }
+        for (lpvar j : c.second) {
+            if (!var_is_int(j))
+                return false;
+        }
         std::sort (c.second.begin(), c.second.end());  
     }
 

@@ -81,7 +81,6 @@ std::ostream& intervals::display_separating_interval(std::ostream& out, const ne
 
 // return true iff the interval of n is does not contain 0
 bool intervals::check_nex_sign(const nex* n, u_dependency* initial_deps, sign s) {
-    m_core->lp_settings().stats().m_cross_nested_forms++;
     scoped_dep_interval i(get_dep_intervals());
     std::function<void (const lp::explanation&)> f = [this](const lp::explanation& e) {
         new_lemma lemma(*m_core, "check_nex");

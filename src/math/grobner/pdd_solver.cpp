@@ -60,16 +60,12 @@ namespace dd {
     */
 
 
-void solver::check_callback(equation const & eq) const {
-    auto vars = m.to_monomials(eq.poly());
-    m_f(vars);
-}
 
-solver::solver(reslimit& lim, pdd_manager& m, const std::function<bool (vector<std::pair<rational, unsigned_vector>>&)>& f) : 
+solver::solver(reslimit& lim, pdd_manager& m, const std::function<bool (vector<std::pair<rational, unsigned_vector>>&)>& check_callback) : 
         m(m),
         m_limit(lim), 
         m_conflict(nullptr),
-        m_f(f)
+        m_check_callback(check_callback)
     {}
 
     solver::~solver() {
@@ -358,6 +354,7 @@ solver::solver(reslimit& lim, pdd_manager& m, const std::function<bool (vector<s
     void solver::add(pdd const& p, u_dependency * dep) {
         if (p.is_zero()) return;
         equation * eq = alloc(equation, p, dep);
+        TRACE("dd.solver", display(tout, *eq););
         if (check_conflict(*eq)) {
             return;
         }
