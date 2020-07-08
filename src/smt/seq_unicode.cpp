@@ -12,6 +12,7 @@ Abstract:
 Author:
 
     Nikolaj Bjorner (nbjorner) 2020-5-16
+    Max Levatich 2020-7-1
 
 --*/
 
