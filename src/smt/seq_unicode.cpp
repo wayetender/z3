@@ -74,7 +74,7 @@ namespace smt {
         literal ge = mk_literal(seq.mk_le(e2, e1));
         add_axiom(~eq, le);
         add_axiom(~eq, ge);
-        add_axiom(le, ge, eq);
+        add_axiom(~le, ~ge, eq);
     }
 
     // = on characters
@@ -229,6 +229,7 @@ namespace smt {
         if (!assume_eqs(char_vars)) 
             return false;
 
+        TRACE("seq", display(tout););
         // If all checks pass, we're done
         return true;
     }
@@ -241,7 +242,7 @@ namespace smt {
             if (w != v && th.assume_eq(th.get_enode(v), th.get_enode(w))) {
                 TRACE("seq", tout << "assume v" << v << " == v" << w << "\n";);
                 success = false;
-            }
+            }            
         }
         return success;
     }
@@ -291,7 +292,6 @@ namespace smt {
     }
 
     void seq_unicode::propagate(edge_id edge) {
-        TRACE("seq", display(tout << "propagate " << edge << " "););
         if (dl.enable_edge(edge))
             return;
         m_nc_functor.reset();
