@@ -174,33 +174,35 @@ namespace smt {
     }
 
 
+    /**
+     * Enforce: 
+     *    to_code(s) = v => s = unit(@char(v))
+     */
     bool seq_unicode::enforce_char_codes(svector<theory_var> const& char_vars) {
-
-        // Iterate over all theory variables until the context is inconsistent
         bool success = true;
         if (!m_uses_to_code)
             return success;
         arith_util a(m);
         arith_value avalue(m);
         avalue.init(&ctx());
-        uint_set seen;
-        for (auto v : char_vars) {
-            if (ctx().inconsistent()) break;
+        rational v;
 
-            // Make sure we haven't seen this value already
-            int val = get_value(v);
-            if (seen.contains(val)) continue;
-            seen.insert(val);
-
-            // Ensure str.to_code(unit(v)) = val
-            expr_ref ch(seq.str.mk_unit(seq.str.mk_char(val)), m);
-            expr_ref code(seq.str.mk_to_code(ch), m);
-            rational val2;
-
-            if (avalue.get_value(code, val2) && val2 == rational(val)) continue;
-
-            add_axiom(th.mk_eq(code, a.mk_int(val), false));
-            success = false;
+        for (enode* n : ctx().enodes()) {
+            app* to_code = n->get_owner();
+            if (!seq.str.is_to_code(to_code)) 
+                continue;
+            if (!avalue.get_value(to_code, v))
+                continue;
+            if (v.is_neg() || !v.is_unsigned() || v.get_unsigned() > zstring::max_char())
+                continue;
+            enode* s = n->get_arg(0);
+            app_ref ch(seq.str.mk_unit(seq.str.mk_char(v.get_unsigned())), m);
+            enode* s2 = th.ensure_enode(ch);
+            if (s->get_root() != s2->get_root()) {
+                add_axiom(~th.mk_eq(to_code, a.mk_int(v), false), th.mk_eq(s->get_owner(), ch, false));
+                success = false;
+                break;
+            }
         }
 
         // If a constraint was added without being propagated, we can't be finished yet
