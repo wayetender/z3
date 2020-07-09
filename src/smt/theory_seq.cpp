@@ -3367,7 +3367,6 @@ void theory_seq::relevant_eh(app* n) {
     if (m_util.str.is_replace_all(n) ||
         m_util.str.is_replace_re(n) ||
         m_util.str.is_replace_re_all(n)) {        
-        std::cout << "unhandled -call " << mk_pp(n, m) << "\n";
         add_unhandled_expr(n);
     }
 
@@ -3379,7 +3378,7 @@ void theory_seq::relevant_eh(app* n) {
 
 void theory_seq::add_unhandled_expr(expr* n) {
     if (!m_unhandled_expr) {
-        std::cout << "unhandled " << mk_pp(n, m) << "\n";
+        IF_VERBOSE(0, verbose_stream() << "unhandled " << mk_pp(n, m) << "\n");
         ctx.push_trail(value_trail<context, expr*>(m_unhandled_expr));
         m_unhandled_expr = n;
     }

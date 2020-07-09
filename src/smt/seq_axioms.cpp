@@ -780,23 +780,24 @@ void seq_axioms::add_is_digit_axiom(expr* n) {
     expr* e = nullptr;
     VERIFY(seq.str.is_is_digit(n, e)); 
     literal is_digit = mk_literal(n);
-#if 1
-    literal eq1 = mk_eq(mk_len(e), a.mk_int(1));
-    expr_ref nth0 = mk_nth(e, 0);
-    literal ge0 = mk_literal(seq.mk_le(seq.mk_char('0'), nth0));
-    literal le9 = mk_literal(seq.mk_le(nth0, seq.mk_char('9')));
-    add_axiom(~is_digit, eq1);
-    add_axiom(~is_digit, ge0);
-    add_axiom(~is_digit, le9);
-    add_axiom(~eq1, ~ge0, ~le9, is_digit);
-#else
-    expr_ref to_code(seq.str.mk_to_code(e), m);
-    literal ge0 = mk_ge(to_code, (unsigned)'0');
-    literal le9 = mk_le(to_code, (unsigned)'9');
-    add_axiom(~is_digit, ge0);
-    add_axiom(~is_digit, le9);
-    add_axiom(is_digit, ~ge0, ~le9);
-#endif
+    if (ctx().get_fparams().m_seq_use_unicode) {
+        literal eq1 = mk_eq(mk_len(e), a.mk_int(1));
+        expr_ref nth0 = mk_nth(e, 0);
+        literal ge0 = mk_literal(seq.mk_le(seq.mk_char('0'), nth0));
+        literal le9 = mk_literal(seq.mk_le(nth0, seq.mk_char('9')));
+        add_axiom(~is_digit, eq1);
+        add_axiom(~is_digit, ge0);
+        add_axiom(~is_digit, le9);
+        add_axiom(~eq1, ~ge0, ~le9, is_digit);
+    }
+    else {
+        expr_ref to_code(seq.str.mk_to_code(e), m);
+        literal ge0 = mk_ge(to_code, (unsigned)'0');
+        literal le9 = mk_le(to_code, (unsigned)'9');
+        add_axiom(~is_digit, ge0);
+        add_axiom(~is_digit, le9);
+        add_axiom(is_digit, ~ge0, ~le9);
+    }
 }
 
 /**
