@@ -19,6 +19,7 @@ Revision History:
 --*/
 #pragma once
 
+#include "util/dependency.h"
 #include "ast/seq_decl_plugin.h"
 #include "ast/arith_decl_plugin.h"
 #include "ast/rewriter/th_rewriter.h"
@@ -99,6 +100,16 @@ namespace smt {
 
         expr_ref add_length_limit(expr* s, unsigned k);
     };
+
+    struct seq_assumption {
+        enode* n1, *n2;
+        literal lit;
+        seq_assumption(enode* n1, enode* n2): n1(n1), n2(n2), lit(null_literal) {}
+        seq_assumption(literal lit): n1(nullptr), n2(nullptr), lit(lit) {}
+    };
+    typedef scoped_dependency_manager<seq_assumption> seq_dependency_manager;
+    typedef seq_dependency_manager::dependency seq_dependency;        
+    
 
 };
 

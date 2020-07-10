@@ -27,11 +27,28 @@ Author:
 
 namespace smt {
 
-    seq_unicode::seq_unicode(theory& th):
+    void seq_unicode::nc_functor::linearize() { 
+        svector<seq_assumption> assumptions;
+        for (auto* d : m_deps) 
+            dm.linearize(d, assumptions);
+        for (seq_assumption const& a : assumptions) {
+            if (a.lit != null_literal) {
+                m_literals.push_back(a.lit);
+            }
+            if (a.n1 != nullptr) {
+                m_eqs.push_back(enode_pair(a.n1, a.n2));
+            }
+        }
+    }
+
+
+    seq_unicode::seq_unicode(theory& th, seq_dependency_manager& dm):
         th(th),
         m(th.get_manager()),
+        dm(dm),
         seq(m),
         m_qhead(0),
+        m_nc_functor(dm),
         m_var_value_hash(*this),
         m_var_value_eq(*this),
         m_var_value_table(DEFAULT_HASHTABLE_INITIAL_CAPACITY, m_var_value_hash, m_var_value_eq),
@@ -39,24 +56,24 @@ namespace smt {
     {}
 
     // <= atomic constraints on characters
-    edge_id seq_unicode::assign_le(theory_var v1, theory_var v2, literal lit) {
+    edge_id seq_unicode::assign_le(theory_var v1, theory_var v2, dependency* dep) {
         dl.init_var(v1);
         dl.init_var(v2);
         TRACE("seq", tout << mk_pp(th.get_expr(v1), m) << " <= " << mk_pp(th.get_expr(v2), m) << "\n";);
-        return add_edge(v1, v2, 0, lit);
+        return add_edge(v1, v2, 0, dep);
     }
 
     // < atomic constraint on characters
-    edge_id seq_unicode::assign_lt(theory_var v1, theory_var v2, literal lit) {
+    edge_id seq_unicode::assign_lt(theory_var v1, theory_var v2, dependency* dep) {
         dl.init_var(v1);
         dl.init_var(v2);
         TRACE("seq", tout << mk_pp(th.get_expr(v1), m) << " < " << mk_pp(th.get_expr(v2), m) << "\n";);
-        return add_edge(v1, v2, -1, lit);
+        return add_edge(v1, v2, -1, dep);
     }
 
-    edge_id seq_unicode::add_edge(theory_var v1, theory_var v2, int diff, literal lit) {
+    edge_id seq_unicode::add_edge(theory_var v1, theory_var v2, int diff, dependency* dep) {
         ctx().push_trail(push_back_vector<context, svector<theory_var>>(m_asserted_edges));
-        edge_id new_edge = dl.add_edge(v2, v1, s_integer(diff), lit);
+        edge_id new_edge = dl.add_edge(v2, v1, s_integer(diff), dep);
         m_asserted_edges.push_back(new_edge);
         return new_edge;
     }
@@ -79,8 +96,9 @@ namespace smt {
     }
 
     // = on characters
-    void seq_unicode::new_eq_eh(theory_var v1, theory_var v2) {
-        adapt_eq(v1, v2);
+    void seq_unicode::new_eq_eh(theory_var v1, theory_var v2, dependency* dep) {
+        assign_le(v1, v2, dep);
+        assign_le(v2, v1, dep);
     }
 
     // != on characters
@@ -96,8 +114,8 @@ namespace smt {
         // v0 - v <= - min
         // v - v0 <= max
         bool is_sat = 
-            dl.enable_edge(dl.add_edge(v, v0, s_integer(-1 * min), null_literal))
-            && dl.enable_edge(dl.add_edge(v0, v, s_integer(max), null_literal));
+            dl.enable_edge(dl.add_edge(v, v0, s_integer(-1 * min), nullptr))
+            && dl.enable_edge(dl.add_edge(v0, v, s_integer(max), nullptr));
         if (is_sat) 
             dl.set_to_zero(v0);
         return is_sat;
@@ -148,7 +166,7 @@ namespace smt {
                     theory_var v0 = ensure0();
 
                     // Add constraint on v and check consistency
-                    propagate(assign_le(v0, v, null_literal));
+                    propagate(assign_le(v0, v, nullptr));
                     if (ctx().inconsistent()) return false;
                 }
                 if (val > static_cast<int>(zstring::max_char())) {
@@ -158,7 +176,7 @@ namespace smt {
                     theory_var v_maxchar = ensure_maxchar();
 
                     // Add constraint on v and check consistency
-                    propagate(assign_le(v, v_maxchar, null_literal));
+                    propagate(assign_le(v, v_maxchar, nullptr));
                     if (ctx().inconsistent()) return false;
                 }
             }
@@ -265,8 +283,8 @@ namespace smt {
         }
         else {
             theory_var v0 = ensure0();
-            add_edge(v, v0, ch, null_literal);  // v - v0 <= ch
-            add_edge(v0, v, -static_cast<int>(ch), null_literal);  // v0 - v <= -ch
+            add_edge(v, v0, ch, nullptr);  // v - v0 <= ch
+            add_edge(v0, v, -static_cast<int>(ch), nullptr);  // v0 - v <= -ch
         }
     }
 
@@ -299,11 +317,13 @@ namespace smt {
             return;
         m_nc_functor.reset();
         dl.traverse_neg_cycle2(false, m_nc_functor);
-        literal_vector const & lits = m_nc_functor.get_lits();
+        m_nc_functor.linearize();
+        auto const & lits = m_nc_functor.get_lits();
+        auto const & eqs = m_nc_functor.get_eqs();
         vector<parameter> params;
         if (m.proofs_enabled()) {
             params.push_back(parameter(symbol("farkas")));
-            for (unsigned i = 0; i <= lits.size(); ++i) {
+            for (unsigned i = 0; i <= lits.size() + eqs.size(); ++i) {
                 params.push_back(parameter(rational(1)));
             }
         }
@@ -313,7 +333,7 @@ namespace smt {
                 ext_theory_conflict_justification(
                     th.get_id(), ctx().get_region(),
                     lits.size(), lits.c_ptr(),
-                    0, nullptr,
+                    eqs.size(), eqs.c_ptr(),
                     params.size(), params.c_ptr())));
         SASSERT(ctx().inconsistent());
     }

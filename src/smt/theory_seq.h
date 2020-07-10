@@ -41,15 +41,9 @@ namespace smt {
     class theory_seq : public theory {
         friend class seq_regex;
 
-        struct assumption {
-            enode* n1, *n2;
-            literal lit;
-            assumption(enode* n1, enode* n2): n1(n1), n2(n2), lit(null_literal) {}
-            assumption(literal lit): n1(nullptr), n2(nullptr), lit(lit) {}
-        };
-        typedef scoped_dependency_manager<assumption> dependency_manager;
-        typedef dependency_manager::dependency dependency;        
-
+        typedef seq_dependency_manager dependency_manager;
+        typedef seq_dependency dependency;
+        typedef seq_assumption assumption;
         typedef trail_stack<theory_seq> th_trail_stack;
         struct expr_dep {
             expr* v;

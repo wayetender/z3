@@ -298,7 +298,7 @@ theory_seq::theory_seq(context& ctx):
     m_autil(m),
     m_sk(m, m_rewrite),
     m_ax(*this, m_rewrite),
-    m_unicode(*this),
+    m_unicode(*this, m_dm),
     m_regex(*this),
     m_arith_value(m),
     m_trail_stack(*this),
@@ -945,7 +945,7 @@ bool theory_seq::simplify_eq(expr_ref_vector& ls, expr_ref_vector& rs, dependenc
         else if (ctx.get_fparams().m_seq_use_unicode && m_util.is_char(li)) {
             enode* ln = ensure_enode(li);
             enode* rn = ensure_enode(ri);
-            m_unicode.new_eq_eh(ln->get_th_var(get_id()), rn->get_th_var(get_id()));
+            m_unicode.new_eq_eh(ln->get_th_var(get_id()), rn->get_th_var(get_id()), deps);
             propagate_eq(deps, ln, rn);
         }
         else if (m_util.is_seq(li) || m_util.is_re(li)) {
@@ -3141,9 +3141,9 @@ void theory_seq::assign_eh(bool_var v, bool is_true) {
         theory_var v1 = get_th_var(ctx.get_enode(e1));
         theory_var v2 = get_th_var(ctx.get_enode(e2));
         if (is_true) 
-            m_unicode.assign_le(v1, v2, lit);
+            m_unicode.assign_le(v1, v2, m_dm.mk_leaf(assumption(lit)));
         else
-            m_unicode.assign_lt(v2, v1, lit);
+            m_unicode.assign_lt(v2, v1, m_dm.mk_leaf(assumption(lit)));
     }
     else if (m_util.is_skolem(e)) {
         
@@ -3162,7 +3162,7 @@ void theory_seq::new_eq_eh(theory_var v1, theory_var v2) {
     enode* n1 = get_enode(v1);
     enode* n2 = get_enode(v2);
     if (ctx.get_fparams().m_seq_use_unicode && m_util.is_char(n1->get_owner())) {
-        m_unicode.new_eq_eh(v1, v2);
+        m_unicode.new_eq_eh(v1, v2, m_dm.mk_leaf(assumption(n1, n2)));
         return;
     }
     if (ctx.get_fparams().m_seq_use_derivatives && m_util.is_re(n1->get_owner())) {

@@ -20,28 +20,35 @@ Author:
 #include "ast/seq_decl_plugin.h"
 #include "smt/smt_theory.h"
 #include "smt/diff_logic.h"
+#include "smt/seq_axioms.h"
 
 namespace smt {
 
     class seq_unicode {
+
+        typedef seq_dependency dependency;
+
         struct ext {
             static const bool m_int_theory = true;
             typedef s_integer numeral;
             typedef s_integer fin_numeral;
             numeral m_epsilon;
-            typedef literal explanation;
+            typedef seq_dependency* explanation;
             ext(): m_epsilon(1) {}            
         };
 
         class nc_functor {
+            seq_dependency_manager& dm;
+            ptr_vector<dependency> m_deps;
             literal_vector m_literals;
+            enode_pair_vector m_eqs;
         public:
-            nc_functor() {}
-            void reset() { m_literals.reset(); }
-            void operator()(literal const& l) {
-                if (l != null_literal) m_literals.push_back(l);
-            }
+            nc_functor(seq_dependency_manager& dm): dm(dm) {}
+            void reset() { m_deps.reset(); m_literals.reset(); m_eqs.reset(); }
+            void operator()(dependency* d) { if (d != nullptr) m_deps.push_back(d); }
+            void linearize();
             literal_vector const& get_lits() const { return m_literals; }
+            enode_pair_vector const& get_eqs() const { return m_eqs; }
             void new_edge(dl_var s, dl_var d, unsigned num_edges, edge_id const* edges) {}
         };
 
@@ -63,6 +70,7 @@ namespace smt {
 
         theory&          th;
         ast_manager&     m;
+        seq_dependency_manager& dm;
         seq_util         seq;
         dl_graph<ext>    dl;
         unsigned         m_qhead;
@@ -83,7 +91,7 @@ namespace smt {
 
         void adapt_eq(theory_var v1, theory_var v2);
 
-        edge_id add_edge(theory_var v1, theory_var v2, int diff, literal lit);
+        edge_id add_edge(theory_var v1, theory_var v2, int diff, dependency* dep);
 
         literal mk_literal(expr* e);
 
@@ -106,7 +114,7 @@ namespace smt {
         bool assume_eqs(svector<theory_var> const& vars);
     public:
 
-        seq_unicode(theory& th);
+        seq_unicode(theory& th, seq_dependency_manager& dm);
 
         std::function<void(literal l1, literal l2, literal l3, literal l4, literal l5)> add_axiom5;
 
@@ -115,13 +123,13 @@ namespace smt {
         void pop_scope(unsigned n);
 
         // <= atomic constraints on characters
-        edge_id assign_le(theory_var v1, theory_var v2, literal lit);
+        edge_id assign_le(theory_var v1, theory_var v2, dependency* dep);
 
         // < atomic constraint on characters
-        edge_id assign_lt(theory_var v1, theory_var v2, literal lit);
+        edge_id assign_lt(theory_var v1, theory_var v2, dependency* dep);
 
         // = on characters
-        void new_eq_eh(theory_var v1, theory_var v2);
+        void new_eq_eh(theory_var v1, theory_var v2, dependency* dep);
 
         // != on characters
         void new_diseq_eh(theory_var v1, theory_var v2);
