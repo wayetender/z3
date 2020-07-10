@@ -20,8 +20,7 @@ Revision History:
     Add SMTLIB 2.6 support 2020-5-17
 
 --*/
-#ifndef SEQ_DECL_PLUGIN_H_
-#define SEQ_DECL_PLUGIN_H_
+#pragma once
 
 #define Z3_USE_UNICODE 1
 
@@ -498,5 +497,4 @@ public:
 
 };
 
-#endif /* SEQ_DECL_PLUGIN_H_ */
 

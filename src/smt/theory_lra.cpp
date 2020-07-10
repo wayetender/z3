@@ -1395,10 +1395,11 @@ public:
 #endif
         }
         else {
-            literal div_ge_0   = mk_literal(a.mk_ge(div, zero));
-            literal div_le_0   = mk_literal(a.mk_le(div, zero));
-            literal p_ge_0     = mk_literal(a.mk_ge(p, zero));
-            literal p_le_0     = mk_literal(a.mk_le(p, zero));
+
+            /*literal div_ge_0   = */ mk_literal(a.mk_ge(div, zero));
+            /*literal div_le_0   = */ mk_literal(a.mk_le(div, zero));
+            /*literal p_ge_0     = */ mk_literal(a.mk_ge(p, zero));
+            /*literal p_le_0     = */ mk_literal(a.mk_le(p, zero));
 
             // q >= 0 or p = (p mod q) + q * (p div q)
             // q <= 0 or p = (p mod q) + q * (p div q)
@@ -1415,8 +1416,11 @@ public:
             mk_axiom(q_le_0, mod_ge_0);
             mk_axiom(q_le_0, ~mk_literal(a.mk_ge(a.mk_sub(mod, q), zero)));            
             mk_axiom(q_ge_0, ~mk_literal(a.mk_ge(a.mk_add(mod, q), zero)));        
+
+
 #if 0
             // seem expensive
+
             mk_axiom(q_le_0, ~p_ge_0, div_ge_0); 
             mk_axiom(q_le_0, ~p_le_0, div_le_0); 
             mk_axiom(q_ge_0, ~p_ge_0, div_le_0);             

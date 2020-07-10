@@ -18,8 +18,7 @@ Author:
 Notes:
 
 --*/
-#ifndef Z3PP_H_
-#define Z3PP_H_
+#pragma once
 
 #include<cassert>
 #include<iostream>
@@ -814,6 +813,7 @@ namespace z3 {
         bool is_numeral(std::string& s) const { if (!is_numeral()) return false; s = Z3_get_numeral_string(ctx(), m_ast); check_error(); return true; }
         bool is_numeral(std::string& s, unsigned precision) const { if (!is_numeral()) return false; s = Z3_get_numeral_decimal_string(ctx(), m_ast, precision); check_error(); return true; }
         bool is_numeral(double& d) const { if (!is_numeral()) return false; d = Z3_get_numeral_double(ctx(), m_ast); check_error(); return true; }
+        bool as_binary(std::string& s) const { if (!is_numeral()) return false; s = Z3_get_numeral_binary_string(ctx(), m_ast); check_error(); return true; }
 
         /**
            \brief Return true if this expression is an application.
@@ -3572,5 +3572,4 @@ namespace z3 {
 /*@}*/
 /*@}*/
 #undef Z3_THROW
-#endif
 

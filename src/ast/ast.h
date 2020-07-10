@@ -16,8 +16,7 @@ Author:
 Revision History:
 
 --*/
-#ifndef AST_H_
-#define AST_H_
+#pragma once
 
 
 #include "util/vector.h"
@@ -1573,6 +1572,12 @@ public:
 
     bool has_trace_stream() const { return m_trace_stream != nullptr; }
     std::ostream & trace_stream() { SASSERT(has_trace_stream()); return *m_trace_stream; }
+    struct suspend_trace {
+        ast_manager& m;
+        std::fstream* m_tr;
+        suspend_trace(ast_manager& m): m(m), m_tr(m.m_trace_stream) { m.m_trace_stream = nullptr; }
+        ~suspend_trace() { m.m_trace_stream = m_tr; }
+    };
 
     void enable_int_real_coercions(bool f) { m_int_real_coercions = f; }
     bool int_real_coercions() const { return m_int_real_coercions; }
@@ -2694,6 +2699,5 @@ inline std::ostream& operator<<(std::ostream& out, parameter_pp const& pp) {
 }
 
 
-#endif /* AST_H_ */
 
 
