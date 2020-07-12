@@ -39,12 +39,13 @@ namespace smt {
 
         class nc_functor {
             seq_dependency_manager& dm;
-            ptr_vector<dependency> m_deps;
-            literal_vector m_literals;
-            enode_pair_vector m_eqs;
+            ptr_vector<dependency>  m_deps;
+            literal_vector          m_literals;
+            enode_pair_vector       m_eqs;
+            svector<seq_assumption> m_assumptions;
         public:
             nc_functor(seq_dependency_manager& dm): dm(dm) {}
-            void reset() { m_deps.reset(); m_literals.reset(); m_eqs.reset(); }
+            void reset() { m_deps.reset(); }
             void operator()(dependency* d) { if (d != nullptr) m_deps.push_back(d); }
             void linearize();
             literal_vector const& get_lits() const { return m_literals; }
@@ -73,6 +74,8 @@ namespace smt {
         seq_dependency_manager& dm;
         seq_util         seq;
         dl_graph<ext>    dl;
+        svector<std::pair<theory_var, theory_var>> m_diseqs;
+        unsigned_vector  m_diseqs_lim;
         unsigned         m_qhead;
         svector<edge_id> m_asserted_edges;
         nc_functor       m_nc_functor;
@@ -88,8 +91,6 @@ namespace smt {
         void add_axiom(literal a, literal b = null_literal, literal c = null_literal) {
             add_axiom5(a, b, c, null_literal, null_literal);
         }
-
-        void adapt_eq(theory_var v1, theory_var v2);
 
         edge_id add_edge(theory_var v1, theory_var v2, int diff, dependency* dep);
 
@@ -108,6 +109,10 @@ namespace smt {
         bool enforce_char_range(svector<theory_var> const& char_vars);
 
         bool enforce_char_codes(svector<theory_var> const& char_vars);
+
+        bool check_diseqs();
+
+        void enforce_diseq(theory_var v1, theory_var v2);
 
         void try_make_nice(svector<theory_var> const& char_vars);
 

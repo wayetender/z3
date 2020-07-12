@@ -28,10 +28,12 @@ Author:
 namespace smt {
 
     void seq_unicode::nc_functor::linearize() { 
-        svector<seq_assumption> assumptions;
+        m_assumptions.reset();
+        m_literals.reset(); 
+        m_eqs.reset();
         for (auto* d : m_deps) 
-            dm.linearize(d, assumptions);
-        for (seq_assumption const& a : assumptions) {
+            dm.linearize(d, m_assumptions);
+        for (seq_assumption const& a : m_assumptions) {
             if (a.lit != null_literal) {
                 m_literals.push_back(a.lit);
             }
@@ -84,17 +86,6 @@ namespace smt {
         return ctx().get_literal(e);
     }
 
-    void seq_unicode::adapt_eq(theory_var v1, theory_var v2) {
-        expr* e1 = th.get_expr(v1);
-        expr* e2 = th.get_expr(v2);
-        literal eq = th.mk_eq(e1, e2, false);
-        literal le = mk_literal(seq.mk_le(e1, e2));
-        literal ge = mk_literal(seq.mk_le(e2, e1));
-        add_axiom(~eq, le);
-        add_axiom(~eq, ge);
-        add_axiom(~le, ~ge, eq);
-    }
-
     // = on characters
     void seq_unicode::new_eq_eh(theory_var v1, theory_var v2, dependency* dep) {
         assign_le(v1, v2, dep);
@@ -103,7 +94,22 @@ namespace smt {
 
     // != on characters
     void seq_unicode::new_diseq_eh(theory_var v1, theory_var v2) {
-        adapt_eq(v1, v2);
+        dl.init_var(v1);
+        dl.init_var(v2);
+#if 0
+        enforce_diseq(v1, v2);
+#else
+        m_diseqs.push_back(std::make_pair(v1, v2));
+#endif
+    }
+
+    void seq_unicode::enforce_diseq(theory_var v1, theory_var v2) {
+        expr* e1 = th.get_expr(v1);
+        expr* e2 = th.get_expr(v2);
+        literal eq = th.mk_eq(e1, e2, false);
+        literal le = mk_literal(seq.mk_le(e1, e2));
+        literal ge = mk_literal(seq.mk_le(e2, e1));
+        add_axiom(~le, ~ge, eq);
     }
 
     bool seq_unicode::try_bound(theory_var v, unsigned min, unsigned max) {
@@ -236,7 +242,7 @@ namespace smt {
                 char_vars.push_back(v);        
 
         // Shift assignments on variables, so that they are "nice" (have values 'a', 'b', ...)
-        try_make_nice(char_vars);
+//        try_make_nice(char_vars);
 
         // Validate that all variables must be in 0 <= v <= zstring::max_char()
         if (!enforce_char_range(char_vars)) 
@@ -246,6 +252,9 @@ namespace smt {
         if (!enforce_char_codes(char_vars)) 
             return false;
 
+        if (!check_diseqs())
+            return false;
+        
         // Ensure that equal characters are known to be equal to congruences.
         if (!assume_eqs(char_vars)) 
             return false;
@@ -253,6 +262,19 @@ namespace smt {
         TRACE("seq", display(tout););
         // If all checks pass, we're done
         return true;
+    }
+
+    bool seq_unicode::check_diseqs() {
+        unsigned eqs = 0;
+        for (auto p : m_diseqs) {
+            theory_var v1 = p.first;
+            theory_var v2 = p.second;
+            if (dl.get_assignment(v1).get_int() == dl.get_assignment(v2).get_int()) {
+                enforce_diseq(v1, v2);
+                ++eqs;
+            }
+        }
+        return eqs == 0;
     }
 
     bool seq_unicode::assume_eqs(svector<theory_var> const& vars) {
@@ -346,10 +368,13 @@ namespace smt {
 
     void seq_unicode::push_scope() {
         dl.push();
+        m_diseqs_lim.push_back(m_diseqs.size());
     }
 
     void seq_unicode::pop_scope(unsigned n) {
         dl.pop(n);
+        m_diseqs.shrink(m_diseqs_lim[m_diseqs_lim.size() - n]);
+        m_diseqs_lim.shrink(m_diseqs_lim.size() - n);
     }
 
 
